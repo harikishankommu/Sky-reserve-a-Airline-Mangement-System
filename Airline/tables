@@ -1,0 +1,141 @@
+CREATE TABLE Users (
+    UserID VARCHAR(50) PRIMARY KEY,  
+    Name VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    Phone CHAR(10) UNIQUE NOT NULL CHECK (Phone REGEXP '^[0-9]{10}$'), 
+    PasswordHash VARCHAR(255) NOT NULL);
+
+
+CREATE TABLE Flights (
+    Flight_Number VARCHAR(10) PRIMARY KEY,
+    Airport_Name VARCHAR(100) NOT NULL,
+    Source_Airport VARCHAR(50) NOT NULL,
+    Destination_Airport VARCHAR(50) NOT NULL,
+    Departure_Time TIME NOT NULL,
+    Arrival_Time TIME NOT NULL,
+    Economy_Class_Seats INT DEFAULT 0,
+    Premium_Economy_Class_Seats INT DEFAULT 0,
+    Business_Class_Seats INT DEFAULT 0,
+    First_Class_Seats INT DEFAULT 0,
+    Operating_Days SET('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL
+);
+
+CREATE TABLE Seats_Available (
+    Flight_Number VARCHAR(10) NOT NULL,
+    Cabin_Code VARCHAR(10) NOT NULL,  -- e.g., E1, B1 (Economy Cabin 1, Business Cabin 1, etc.)
+    Seat_Number VARCHAR(10) NOT NULL, -- e.g., 12A, 12B, etc.
+    ClassType ENUM('Economy', 'Premium Economy', 'Business', 'First Class') NOT NULL,
+    SeatType ENUM('Window', 'Middle', 'Aisle') NOT NULL,
+    PRIMARY KEY (Flight_Number, Cabin_Code, Seat_Number),
+    FOREIGN KEY (Flight_Number) REFERENCES Flights(Flight_Number)
+);
+
+CREATE TABLE Seats_Booked (
+    Flight_Number VARCHAR(10) NOT NULL,
+    Class VARCHAR(20) NOT NULL,  -- 'Economy', 'Premium Economy', 'Business', 'First Class'
+    Cabin_Code VARCHAR(10),      -- e.g., E1, B1
+    Seat_Number VARCHAR(10) NOT NULL,
+    PNR VARCHAR(20) NOT NULL,
+    Booking_Time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Passenger_ID INT,
+    PRIMARY KEY (Flight_Number, Cabin_Code, Seat_Number)
+);
+
+CREATE TABLE Tickets (
+    PNR VARCHAR(20) PRIMARY KEY,
+    UserID VARCHAR(50) NOT NULL,
+    Flight_Number VARCHAR(10) NOT NULL,
+    Journey_Date DATE NOT NULL,
+    Booking_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (Flight_Number) REFERENCES Flights(Flight_Number)
+);
+
+CREATE TABLE Payments (
+    Payment_ID INT AUTO_INCREMENT PRIMARY KEY,
+    PNR_Number VARCHAR(10) NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL CHECK (Amount > 0),
+    Payment_Mode ENUM('Credit Card', 'Debit Card', 'UPI', 'Net Banking') NOT NULL,
+    Payment_Date DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE Passengers (
+    PassengerID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID VARCHAR(50) NOT NULL,
+    Passenger_No INT NOT NULL,
+    PNR VARCHAR(10) UNIQUE NOT NULL,
+    Name VARCHAR(100) NOT NULL,
+    Age INT NOT NULL,
+    Gender ENUM('Male', 'Female', 'Other') NOT NULL,
+    Class ENUM('Economy', 'Premium Economy', 'Business', 'First') NOT NULL,
+    Flight_Number VARCHAR(10) NOT NULL,
+    Journey_Date DATE NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (Flight_Number) REFERENCES Flights(Flight_Number)
+);
+
+
+CREATE TABLE Refunds (
+    Refund_ID INT AUTO_INCREMENT PRIMARY KEY,
+    PNR_Number VARCHAR(20) NOT NULL,
+    Refund_Amount DECIMAL(10,2) NOT NULL CHECK (Refund_Amount >= 0),
+    Refund_Mode ENUM('Credit Card', 'Debit Card', 'UPI', 'Net Banking') NOT NULL,
+    Refund_Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Status ENUM('Processed', 'Pending', 'Failed') DEFAULT 'Pending',
+    FOREIGN KEY (PNR_Number) REFERENCES Tickets(PNR)
+);
+
+DELIMITER $$
+
+CREATE PROCEDURE Allocate_Seatc (
+    IN flight_no VARCHAR(10),
+    IN class_type VARCHAR(20),
+    IN pnr_no VARCHAR(20),
+    IN passenger_id INT,
+    OUT status_msg VARCHAR(50),
+    OUT out_cabin VARCHAR(10),
+    OUT out_seat VARCHAR(10)
+)
+BEGIN
+    DECLARE seat_count INT;
+    DECLARE cabin_code VARCHAR(10);
+    DECLARE seat_no VARCHAR(10);
+
+    -- 1. Check available confirmed seats
+    SELECT COUNT(*) INTO seat_count
+    FROM Seats_Available
+    WHERE Flight_Number = flight_no AND ClassType = class_type;
+
+    IF seat_count > 0 THEN
+        -- 2. Select an available seat
+        SELECT Cabin_Code, Seat_Number
+        INTO cabin_code, seat_no
+        FROM Seats_Available
+        WHERE Flight_Number = flight_no AND ClassType = class_type
+        LIMIT 1;
+
+        -- 3. Insert the allocated seat into Seats_Booked
+        INSERT INTO Seats_Booked (
+            Flight_Number, Class, Cabin_Code, Seat_Number,  PNR, Passenger_ID
+        ) VALUES (
+            flight_no, class_type, cabin_code, seat_no, pnr_no, passenger_id
+        );
+
+        -- 4. Remove the allocated seat from Seats_Available
+        DELETE FROM Seats_Available
+        WHERE Flight_Number = flight_no AND Cabin_Code = cabin_code AND Seat_Number = seat_no;
+
+        -- Set the output status and seat details
+        SET status_msg = 'Confirmed';
+        SET out_cabin = cabin_code;
+        SET out_seat = seat_no;
+
+    ELSE
+        -- 5. Handle the case when no seats are available (optional)
+        SET status_msg = 'No Seats Available';
+        SET out_cabin = NULL;
+        SET out_seat = NULL;
+    END IF;
+END $$
+
+DELIMITER ;

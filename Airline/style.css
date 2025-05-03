@@ -1,0 +1,132 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0B0C10; /* Dark Black */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    margin: 0 15px;
+}
+
+.form-box {
+    background: linear-gradient(to top, #0B0C10, #1F2833); /* Dark gradient */
+    width: 100%;
+    max-width: 400px;
+    padding: 30px;
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+    display: none;
+    box-shadow: 0 0 20px rgba(102, 252, 241, 0.2); /* Aqua Blue glow */
+    border: 1px solid #45A29E; /* Teal Blue border */
+}
+
+.form-box.active {
+    display: block;
+}
+
+h2,
+.form-box h2 {
+    font-size: 28px;
+    color: #66FCF1; /* Aqua Blue */
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    position: relative;
+}
+
+.form-box h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background-color: #45A29E; /* Teal Blue */
+    margin: 8px auto 0;
+    border-radius: 2px;
+}
+
+.form-box input[type="text"],
+.form-box input[type="password"],
+.form-box input[type="tel"],
+.form-box input[type="email"],
+.form-box select {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #45A29E; /* Teal Blue */
+    border-radius: 8px;
+    font-size: 16px;
+    background-color: #C5C6C7; /* Gray */
+    color: #0B0C10; /* Text color inside input */
+}
+
+input:focus {
+    border-color: #66FCF1;
+    background-color: #fff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(102, 252, 241, 0.5);
+}
+
+button,
+.form-box button {
+    background-color: #45A29E; /* Teal Blue */
+    color: #0B0C10; /* Dark Black text */
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+button:hover,
+.form-box button:hover {
+    background-color: #66FCF1; /* Aqua Blue */
+    color: #0B0C10;
+}
+
+p {
+    font-size: 14.5px;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #C5C6C7; /* Gray */
+}
+
+p a {
+    color: #66FCF1;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+p a:hover {
+    color: #45A29E;
+    text-decoration: underline;
+}
+
+.error-message {
+    color: #0B0C10;
+    background-color: #C5C6C7;
+    padding: 10px 15px;
+    margin-top: 10px;
+    border: 1px solid #66FCF1;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SkyReserve Login</title>
+  <link rel="stylesheet" href="aero1.css" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Logo screen styles */
+    .logo-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      opacity: 1;
+      animation: fadeOut 1s ease forwards;
+      animation-delay: 10s;
+    }
+
+    .logo-screen.hidden {
+      display: none;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    /* Hide main content initially */
+    .container {
+      display: none;
+      opacity: 0;
+    }
+
+    .container.visible {
+      display: block;
+      animation: fadeIn 1s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+	
+  </style>
+</head>
+<body>
+  <!-- LOGO ANIMATION SCREEN -->
+  <div class="logo-screen" id="logo-screen">
+    <div class="logo-text">
+      <span class="left">S</span>
+      <span class="left">k</span>
+      <span class="left">y</span>
+      <span class="left">R</span>
+      <span class="center">e</span>
+      <span class="right">s</span>
+      <span class="right">e</span>
+      <span class="right">r</span>
+      <span class="right">v</span>
+      <span class="right">e</span>
+    </div>
+  </div>
+
+  <!-- LOGIN/REGISTER FORM -->
+  <div class="container" id="main-content">
+    <!-- Login Form -->
+    <div class="form-box active" id="login-form">
+      <form action="login_register.php" method="post">
+        <h2>Login</h2>
+        <?= isset($errors['login']) ? showError($errors['login']) : ''; ?>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit" name="login">Login</button>
+        <p>Don't have an account? <a href="#" onclick="showForm('register-form')">Register</a></p>
+      </form>
+    </div>
+
+    <!-- Register Form -->
+    <div class="form-box" id="register-form">
+      <form action="login_register.php" method="post">
+        <h2>Register</h2>
+        <?= isset($errors['register']) ? showError($errors['register']) : ''; ?>
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <input type="text" name="name" placeholder="Full Name" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="tel" name="phone" placeholder="Phone Number" required>
+        <button type="submit" name="register">Register</button>
+        <p>Already have an account? <a href="#" onclick="showForm('login-form')">Login</a></p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Show login/register form after 7 seconds
+    window.addEventListener("DOMContentLoaded", () => {
+      setTimeout(() => {
+        document.getElementById("logo-screen").classList.add("hidden");
+        document.getElementById("main-content").classList.add("visible");
+      }, 7000); // 7 seconds
+    });
+
+    // Toggle between login and register forms
+    function showForm(formId) {
+      document.getElementById("login-form").classList.remove("active");
+      document.getElementById("register-form").classList.remove("active");
+      document.getElementById(formId).classList.add("active");
+    }
+  </script>
+</body>
+</html>

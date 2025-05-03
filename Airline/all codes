@@ -1,0 +1,1450 @@
+#flights
+
+<?php
+session_start();
+require_once 'config.php';
+
+if (!isset($_SESSION['UserID'])) {
+    header("Location: index.php");
+    exit();
+}
+
+$flightNumber = "";
+$flightData = [];
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $flightNumber = $_POST["flightNumber"];
+
+    $stmt = $conn->prepare("SELECT * FROM Flights WHERE Flight_Number = ?");
+    $stmt->bind_param("s", $flightNumber);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $flightData = $result->fetch_assoc();
+    } else {
+        $error_message = "Flight not found!";
+    }
+
+    $stmt->close();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight Schedule</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #0B0C10;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            color: #C5C6C7;
+        }
+
+        .top-buttons {
+            position: fixed;
+    top: 15px;
+    right: 580px;
+    z-index: 1000;
+        }
+
+        .top-buttons a {
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .top-buttons button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: rgb(70, 188, 182);
+            color: black;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .top-buttons button:hover {
+            background-color: #66FCF1;
+        }
+
+        .container {
+            margin: 50pxauto;
+            max-width: 1300px;
+            padding: 20px;
+            background: #1F2833;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.2);
+            border: 1px solid #45A29E;
+        }
+
+        h2, h3 {
+            text-align: center;
+            color: #66FCF1;
+        }
+
+        .form-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            border-radius: 6px;
+            border: 1px solid #45A29E;
+            background-color: #0B0C10;
+            color: #C5C6C7;
+        }
+
+        button[type="submit"] {
+            padding: 10px 20px;
+            background-color: rgb(70, 188, 182);
+            color: #0B0C10;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #66FCF1;
+        }
+
+        table {
+            width: 100%;
+            background-color: #0B0C10;
+            border-collapse: collapse;
+            color: #66FCF1;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #45A29E;
+            text-align: center;
+        }
+
+        th {
+            background-color: #66FCF1;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Navigation Buttons -->
+<div class="top-buttons">
+    <a href="index.php">
+        <button>🏠 Home</button>
+    </a>
+    <a href="dashboard.php">
+        <button>📊 Dashboard</button>
+    </a>
+</div>
+
+<!-- Main Flight Schedule Section -->
+<div class="container">
+    <h2>FLIGHT Details</h2>
+
+    <div class="form-section">
+        <form method="POST">
+            <input type="text" name="flightNumber" placeholder="Enter Flight Number" required value="<?= htmlspecialchars($flightNumber) ?>">
+            <button type="submit">SUBMIT</button>
+        </form>
+    </div>
+
+    <?php if (!empty($flightData)) : ?>
+        <h3>Schedule for Flight Number: <?= htmlspecialchars($flightNumber) ?></h3>
+        <table>
+            <tr>
+                <th>Flight Name</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Departure Time</th>
+                <th>Arrival Time</th>
+                <th>Economy Seats</th>
+                <th>Premium Economy</th>
+                <th>Business Class</th>
+                <th>First Class</th>
+                <th>Operating Days</th>
+            </tr>
+            <tr>
+                <td><?= htmlspecialchars($flightData['Airport_Name']) ?></td>
+                <td><?= htmlspecialchars($flightData['Source_Airport']) ?></td>
+                <td><?= htmlspecialchars($flightData['Destination_Airport']) ?></td>
+                <td><?= htmlspecialchars($flightData['Departure_Time']) ?></td>
+                <td><?= htmlspecialchars($flightData['Arrival_Time']) ?></td>
+                <td><?= htmlspecialchars($flightData['Economy_Class_Seats']) ?></td>
+                <td><?= htmlspecialchars($flightData['Premium_Economy_Class_Seats']) ?></td>
+                <td><?= htmlspecialchars($flightData['Business_Class_Seats']) ?></td>
+                <td><?= htmlspecialchars($flightData['First_Class_Seats']) ?></td>
+                <td><?= htmlspecialchars($flightData['Operating_Days']) ?></td>
+            </tr>
+        </table>
+    <?php elseif (isset($error_message)) : ?>
+        <p style="color: red; text-align: center;"><?= htmlspecialchars($error_message) ?></p>
+    <?php endif; ?>
+</div>
+
+</body>
+</html>
+
+
+Dashboard
+
+<?php
+session_start();
+if (!isset($_SESSION['UserID'])) {
+    header("Location: index.php");
+    exit();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+     body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0B0C10; /* Dark background */
+    margin: 0;
+    padding: 0;
+}
+
+.skyreserve-bg-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16vw; /* Responsive: takes 18% of viewport width */
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.05);
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  text-align: center;
+  width: 100%;
+}
+
+.dashboard-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background: linear-gradient(to top, #0B0C10, #1F2833); 
+    border-radius: 12px;
+    border: 1px solid #45A29E;
+    box-shadow: 0 0 20px rgba(102, 252, 241, 0.2); 
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #C5C6C7; /* Soft gray for heading */
+}
+
+.option {
+    background-color: #C5C6C7; /* Light gray boxes */
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #0B0C10; /* Dark text */
+    transition: 0.3s ease;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.option i {
+    margin-right: 12px;
+    font-size: 20px;
+    color:blueviolet; /* Aqua icon */
+}
+
+.option:hover {
+    background-color: #66FCF1; /* Aqua hover background */
+    color: #0B0C10; /* Dark text on hover */
+}
+
+.option:hover i {
+    color: #0B0C10;
+}
+
+
+    </style>
+     <!-- BACKGROUND TITLE TEXT -->
+ <div class="skyreserve-bg-text">SkyReserve</div>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <h2>Welcome, <?= htmlspecialchars($_SESSION['Name']) ?>!</h2>
+    <a href="flight_schedule.php" class="option"><i class="fa-solid fa-plane"></i> Flight Details</a>
+    <a href="book_ticket.php" class="option"><i class="fa-solid fa-ticket"></i> Book Ticket</a>
+    <a href="pnr_enquiry.php" class="option"><i class="fa-solid fa-magnifying-glass"></i> PNR Enquiry</a>
+    <a href="chart_vacancy.php" class="option"><i class="fa-solid fa-table-list"></i> Avaiable Seats</a>
+    <a href="cancel_ticket.php" class="option"><i class="fa-solid fa-ban"></i> Cancel Ticket</a>
+</div>
+
+</body>
+</html>
+
+chart_vacancy
+
+<?php
+require_once 'config.php';
+
+$availableSeats = [];
+$errorMessage = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $flightNumber = $_POST['flightNumber'];
+    $journeyDate = $_POST['journeyDate']; // currently unused but kept for future use
+
+    $sql = "SELECT ClassType, COUNT(*) AS vacant_count 
+            FROM Seats_Available 
+            WHERE Flight_Number = ? 
+            GROUP BY ClassType";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $flightNumber);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $availableSeats[$row['ClassType']] = $row['vacant_count'];
+        }
+    } else {
+        $errorMessage = "No seats found for the given flight number.";
+    }
+
+    $stmt->close();
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Available Seats - SkyReserve</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            background: #0B0C10;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #C5C6C7;
+        }
+
+        .skyreserve-bg-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18vw;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.05);
+            z-index: 0;
+            pointer-events: none;
+            user-select: none;
+            white-space: nowrap;
+            text-align: center;
+            width: 100%;
+        }
+
+        .top-buttons {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .top-buttons a {
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .top-buttons button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: rgb(70, 188, 182);
+            color: black;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .top-buttons button:hover {
+            background-color: #66FCF1;
+        }
+
+        .container {
+            position: relative;
+            max-width: 500px;
+            margin: 80px auto;
+            padding: 30px;
+            background: #1F2833;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.2);
+            border: 1px solid #45A29E;
+            z-index: 1;
+        }
+
+        h2 {
+            text-align: center;
+            color: #66FCF1;
+            margin-bottom: 25px;
+        }
+
+        input[type="text"],
+        input[type="date"] {
+            width: 95%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #45A29E;
+            border-radius: 6px;
+            background-color: #0B0C10;
+            color: #C5C6C7;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color:rgb(233, 77, 25);
+            margin-bottom: 15px;
+            color: #0B0C10;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #ff5722;
+            color: #0B0C10;
+        }
+
+        .results {
+            margin-top: 25px;
+        }
+
+        table {
+            width: 100%;
+            background-color: black;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #45A29E;
+            text-align: center;
+        }
+
+        th {
+            background-color: #66FCF1;
+            color: black;
+        }
+
+        .error {
+            margin-top: 20px;
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="skyreserve-bg-text">SkyReserve</div>
+
+    <!-- Top Navigation Buttons -->
+    <div class="top-buttons">
+        <a href="index.php">
+            <button>🏠 Home</button>
+        </a>
+        <a href="dashboard.php">
+            <button>📊 Dashboard</button>
+        </a>
+    </div>
+
+    <div class="container">
+        <h2>Flight Seat Availability</h2>
+        <form method="POST">
+            <input type="text" name="flightNumber" placeholder="Flight Number*" required />
+            <input type="date" name="journeyDate" value="<?= date('Y-m-d') ?>" required />
+            <button type="submit">Get Flight Chart</button>
+        </form>
+
+        <?php if (!empty($availableSeats)): ?>
+            <div class="results">
+                <h3>Vacant Seats by Class</h3>
+                <table>
+                    <tr>
+                        <th>Class Type</th>
+                        <th>Vacant Seats</th>
+                    </tr>
+                    <?php foreach ($availableSeats as $class => $count): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($class) ?></td>
+                            <td><?= htmlspecialchars($count) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+        <?php elseif (!empty($errorMessage)): ?>
+            <div class="error"><?= $errorMessage ?></div>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
+
+
+book_ticket
+
+<?php
+session_start();
+require_once 'config.php'; // Include database connection
+
+// Check if user is logged in
+if (!isset($_SESSION['UserID'])) {
+    header("Location: index.php");
+    exit();
+}
+
+$flightResults = [];
+$airports = [];
+
+// Load airports from CSV
+if (($handle = fopen("airports.csv", "r")) !== FALSE) {
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        $airports[] = ["code" => $data[0], "name" => $data[1]];
+    }
+    fclose($handle);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $fromAirport = $_POST["fromAirport"];
+    $toAirport = $_POST["toAirport"];
+    $flightClass = $_POST["flightClass"];
+    $departureDate = $_POST["departureDate"];
+
+    $dayOfWeek = ucfirst(strtolower(date('l', strtotime($departureDate))));
+
+    $stmt = $conn->prepare("
+        SELECT * FROM Flights 
+        WHERE Source_Airport = ? 
+        AND Destination_Airport = ? 
+        AND FIND_IN_SET(?, Operating_Days) > 0
+    ");
+    $stmt->bind_param("sss", $fromAirport, $toAirport, $dayOfWeek);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $flightResults[] = $row;
+        }
+    } else {
+        $error_message = "No flights available for the selected criteria!";
+    }
+
+    $stmt->close();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Flight</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #0B0C10;
+            margin: 0;
+            padding: 0;
+            color: #66FCF7;
+        }
+
+        .top-buttons {
+            position: fixed;
+    top: 15px;
+    right: 580px;
+    z-index: 1000;
+        }
+
+        .top-buttons a {
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .top-buttons button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: rgb(70, 188, 182);
+            color: black;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .top-buttons button:hover {
+            background-color: #66FCF1;
+        }
+
+
+        .container {
+            max-width: 1200px;
+            margin: 200px auto;
+            padding: 30px;
+            background: #1F2833;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.2); /* Aqua Blue glow */
+    border: 1px solid #45A29E; /* Teal Blue border */
+}
+        
+
+        h2, h3 {
+            text-align: center;
+            color: #66FCF1;
+            margin-bottom: 25px;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #C5C6C7;
+        }
+
+        select, input[type="date"] {
+            padding: 10px;
+            border: 1px solid #45A29E;
+            background-color: #0B0C10;
+            color: #C5C6C7;
+            border-radius: 6px;
+            width: 250px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #45A29E;
+            color: #0B0C10;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background-color: #66FCF1;
+            color:#0B0C10;
+        }
+
+        table {
+            width: 100%;
+            background-color :#0B0C10;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #45A29E;
+            color: #C5C6C7;
+        }
+
+        table th {
+            background-color: #66FCF1;
+            color: #0B0C10;
+        }
+
+        .error-message {
+            color: #FF6B6B;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<!-- Top Navigation Buttons -->
+<div class="top-buttons">
+    <a href="index.php">
+        <button>🏠 Home</button>
+    </a>
+    <a href="dashboard.php">
+        <button>📊 Dashboard</button>
+    </a>
+</div>
+<body>
+    <div class="container">
+        <h2>FLIGHT SEARCH</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label>From</label>
+                <select name="fromAirport" required>
+                    <?php foreach ($airports as $airport): ?>
+                        <option value="<?= htmlspecialchars($airport['code']) ?>">
+                            <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>To</label>
+                <select name="toAirport" required>
+                    <?php foreach ($airports as $airport): ?>
+                        <option value="<?= htmlspecialchars($airport['code']) ?>">
+                            <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Class</label>
+                <select name="flightClass" required>
+                    <option value="All">All Classes</option>
+                    <option value="Economy">Economy</option>
+                    <option value="PremiumEconomy">Premium Economy</option>
+                    <option value="Business">Business</option>
+                    <option value="FirstClass">First Class</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Departure Date</label>
+                <input type="date" name="departureDate" required>
+            </div>
+
+            <button type="submit">Search Flights</button>
+        </form>
+
+        <?php if (!empty($flightResults)) : ?>
+            <h3>Available Flights</h3>
+            <table>
+                <tr>
+                    <th>Flight Number</th>
+                    <th>Flight Name</th>
+                    <th>Departure</th>
+                    <th>Arrival</th>
+                    <th>Economy</th>
+                    <th>Premium Economy</th>
+                    <th>Business</th>
+                    <th>First Class</th>
+                    <th>Action</th>
+                </tr>
+                <?php foreach ($flightResults as $flight): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($flight['Flight_Number']) ?></td>
+                        <td><?= htmlspecialchars($flight['Airport_Name']) ?></td>
+                        <td><?= htmlspecialchars($flight['Departure_Time']) ?></td>
+                        <td><?= htmlspecialchars($flight['Arrival_Time']) ?></td>
+                        <td><?= $flight['Economy_Class_Seats'] ?></td>
+                        <td><?= $flight['Premium_Economy_Class_Seats'] ?></td>
+                        <td><?= $flight['Business_Class_Seats'] ?></td>
+                        <td><?= $flight['First_Class_Seats'] ?></td>
+                        <td>
+                            <form method="GET" action="passenger_details.php">
+                                <input type="hidden" name="flightNumber" value="<?= htmlspecialchars($flight['Flight_Number']) ?>">
+                                <input type="hidden" name="fromAirport" value="<?= htmlspecialchars($fromAirport) ?>">
+                                <input type="hidden" name="toAirport" value="<?= htmlspecialchars($toAirport) ?>">
+                                <input type="hidden" name="journeyDate" value="<?= htmlspecialchars($departureDate) ?>">
+                                <button type="submit">Book Now</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </table>
+        <?php elseif (isset($error_message)) : ?>
+            <p class="error-message"><?= htmlspecialchars($error_message) ?></p>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
+
+
+passengers_details
+
+<?php
+session_start();
+require_once 'config.php';
+
+if (!isset($_SESSION['UserID'])) {
+    header("Location: index.php");
+    exit();
+}
+
+// Get flight info from GET parameters
+$flightNumber = $_GET['flightNumber'] ?? '';
+$journeyDate = $_GET['journeyDate'] ?? '';
+$fromAirport = $_GET['fromAirport'] ?? '';
+$toAirport = $_GET['toAirport'] ?? '';
+
+$successMessage = "";
+$errorMessage = "";
+$maxPassengers = 9;
+
+// Initialize passenger session data
+if (!isset($_SESSION['passengers'])) {
+    $_SESSION['passengers'] = [];
+    $_SESSION['passenger_count'] = 0;
+}
+$existingCount = $_SESSION['passenger_count'];
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['submitPassenger'])) {
+    if ($existingCount >= $maxPassengers) {
+        $errorMessage = "Maximum of 9 passengers already added.";
+    } else {
+        $passengerNo = $existingCount + 1;
+        $name = $_POST['name'];
+        $age = $_POST['age'];
+        $gender = $_POST['gender'];
+        $class = $_POST['class'];
+
+        $_SESSION['passengers'][] = [
+            'Passenger_No' => $passengerNo,
+            'Name' => $name,
+            'Age' => $age,
+            'Gender' => $gender,
+            'Class' => $class
+        ];
+
+        $_SESSION['passenger_count'] = $passengerNo;
+
+        if (!isset($_SESSION['pnr'])) {
+            do {
+                $generatedPNR = strtoupper(substr(md5(uniqid()), 0, 6));
+                $stmt = $conn->prepare("SELECT COUNT(*) FROM Passengers WHERE PNR = ?");
+                $stmt->bind_param("s", $generatedPNR);
+                $stmt->execute();
+                $stmt->bind_result($count);
+                $stmt->fetch();
+                $stmt->close();
+            } while ($count > 0);
+
+            $_SESSION['pnr'] = $generatedPNR;
+        }
+
+        $successMessage = "Passenger added successfully!";
+        header("Location: passenger_details.php?flightNumber=$flightNumber&journeyDate=$journeyDate&fromAirport=$fromAirport&toAirport=$toAirport");
+        exit();
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Passenger Details</title>
+    <style>
+        body { font-family: Arial; margin: 30px; }
+        .container { max-width: 600px; margin: auto; }
+        .message { padding: 10px; margin: 10px 0; }
+        .error { background-color: #fdd; color: #a00; }
+        .success { background-color: #dfd; color: #060; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Passenger Details</h2>
+        <p><strong>Flight:</strong> <?= htmlspecialchars($flightNumber) ?> | <?= htmlspecialchars($journeyDate) ?></p>
+        <p><strong>Route:</strong> <?= htmlspecialchars($fromAirport) ?> ➡ <?= htmlspecialchars($toAirport) ?></p>
+        <p><strong>Passengers Added:</strong> <?= $_SESSION['passenger_count'] ?>/9</p>
+
+        <?php if ($errorMessage): ?><div class="message error"><?= $errorMessage ?></div><?php endif; ?>
+        <?php if ($successMessage): ?><div class="message success"><?= $successMessage ?></div><?php endif; ?>
+
+        <?php if ($_SESSION['passenger_count'] < $maxPassengers): ?>
+            <form method="POST">
+                <label>Name: <input type="text" name="name" required></label><br><br>
+                <label>Age: <input type="number" name="age" required></label><br><br>
+                <label>Gender:
+                    <select name="gender" required>
+                        <option value="">Select</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                    </select>
+                </label><br><br>
+                <label>Class:
+                    <select name="class" required>
+                        <option value="">Select Class</option>
+                        <option>Economy</option>
+                        <option>Premium Economy</option>
+                        <option>Business</option>
+                        <option>First</option>
+                    </select>
+                </label><br><br>
+                <button type="submit" name="submitPassenger">Add Passenger</button>
+            </form>
+        <?php endif; ?>
+
+        <?php if ($_SESSION['passenger_count'] > 0): ?>
+            <br>
+            <form action="payment.php" method="GET">
+                <input type="hidden" name="flightNumber" value="<?= htmlspecialchars($flightNumber) ?>">
+                <input type="hidden" name="journeyDate" value="<?= htmlspecialchars($journeyDate) ?>">
+                <input type="hidden" name="fromAirport" value="<?= htmlspecialchars($fromAirport) ?>">
+                <input type="hidden" name="toAirport" value="<?= htmlspecialchars($toAirport) ?>">
+                <input type="hidden" name="pnr" value="<?= htmlspecialchars($_SESSION['pnr']) ?>">
+                <input type="hidden" name="class" value="<?= htmlspecialchars($_SESSION['passengers'][0]['Class'] ?? '') ?>">
+                <button type="submit">Proceed to Payment</button>
+            </form>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
+
+
+Payments
+
+<?php
+session_start();
+require_once 'config.php';
+
+if (!isset($_SESSION['UserID']) || !isset($_SESSION['passengers']) || !isset($_GET['flightNumber']) || !isset($_GET['pnr'])) {
+    echo "Session expired or missing data. Please start again.";
+    exit();
+}
+
+$flightNumber = $_GET['flightNumber'];
+$journeyDate = $_GET['journeyDate'];
+$pnrNumber = $_GET['pnr'];
+$flightClass = $_GET['class'];
+$fromAirport = $_GET['fromAirport'] ?? '';
+$toAirport = $_GET['toAirport'] ?? '';
+$passengers = $_SESSION['passengers'];
+
+$farePerPassenger = $totalFare = $distance = 0;
+
+$stmt = $conn->prepare("SELECT Distance_travelled FROM flights WHERE Flight_Number = ?");
+$stmt->bind_param("s", $flightNumber);
+$stmt->execute();
+$result = $stmt->get_result();
+$flight = $result->fetch_assoc();
+$stmt->close();
+
+if ($flight) {
+    $distance = (float)$flight['Distance_travelled'];
+    switch ($flightClass) {
+        case 'Economy': $farePerPassenger = (3 * $distance) + 200; break;
+        case 'Premium Economy': $farePerPassenger = (4 * $distance) + 300; break;
+        case 'Business': $farePerPassenger = (6 * $distance) + 500; break;
+        case 'First': $farePerPassenger = (8 * $distance) + 700; break;
+    }
+    $totalFare = $farePerPassenger * count($passengers);
+} else {
+    echo "Invalid flight details.";
+    exit();
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['confirmPayment'])) {
+    $paymentMethod = $_POST['paymentMethod'];
+    $userID = $_SESSION['UserID'];
+
+    foreach ($passengers as $p) {
+        $stmt = $conn->prepare("SELECT Cabin_Code, Seat_Number FROM Seats_Available WHERE Flight_Number = ? AND ClassType = ? LIMIT 1");
+        $stmt->bind_param("ss", $flightNumber, $flightClass);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $seat = $result->fetch_assoc();
+        $stmt->close();
+
+        if ($seat) {
+            $stmt = $conn->prepare("INSERT INTO Seats_Booked (Flight_Number, Class, Cabin_Code, Seat_Number, PNR, Passenger_ID) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $flightNumber, $flightClass, $seat['Cabin_Code'], $seat['Seat_Number'], $pnrNumber, $p['Passenger_No']);
+            $stmt->execute();
+            $stmt->close();
+
+            $stmt = $conn->prepare("DELETE FROM Seats_Available WHERE Flight_Number = ? AND Cabin_Code = ? AND Seat_Number = ?");
+            $stmt->bind_param("sss", $flightNumber, $seat['Cabin_Code'], $seat['Seat_Number']);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        $stmt = $conn->prepare("INSERT INTO Passengers (UserID, Passenger_No, PNR, Name, Age, Gender, Class, Flight_Number, Journey_Date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sisssssss", $userID, $p['Passenger_No'], $pnrNumber, $p['Name'], $p['Age'], $p['Gender'], $flightClass, $flightNumber, $journeyDate);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    $stmt = $conn->prepare("INSERT INTO Tickets ( PNR, UserID, Flight_Number, Journey_Date ,Booking_Date , Source,Destination) VALUES (?, ?, ?, ?,NOW(), ?, ?)");
+    $stmt->bind_param("ssssss",$pnrNumber, $userID, $flightNumber, $journeyDate ,$fromAirport, $toAirport );
+    $stmt->execute();
+    $stmt->close();
+
+    unset($_SESSION['passengers'], $_SESSION['passenger_count'], $_SESSION['pnr']);
+
+    echo "<h2>✅ Payment Successful!</h2><p>Your Ticket is Booked.<br>PNR: <strong>$pnrNumber</strong></p>";
+    exit();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment</title>
+    <style>
+        body { font-family: Arial; margin: 30px; }
+        .container { max-width: 600px; margin: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Payment</h2>
+        <p><strong>Flight:</strong> <?= htmlspecialchars($flightNumber) ?></p>
+        <p><strong>PNR:</strong> <?= htmlspecialchars($pnrNumber) ?></p>
+        <p><strong>From:</strong> <?= htmlspecialchars($fromAirport) ?> ➡ <?= htmlspecialchars($toAirport) ?></p>
+        <p><strong>Date:</strong> <?= htmlspecialchars($journeyDate) ?></p>
+        <p><strong>Total Fare (<?= count($passengers) ?> Passengers):</strong> ₹<?= $totalFare ?></p>
+
+        <form method="POST">
+            <label>Select Payment Method:
+                <select name="paymentMethod" required>
+                    <option>UPI</option>
+                    <option>Card</option>
+                    <option>Net Banking</option>
+                </select>
+            </label><br><br>
+            <button type="submit" name="confirmPayment">Confirm & Pay</button>
+        </form>
+    </div>
+</body>
+</html>
+
+
+pnr_enquiry
+<?php
+require_once 'config.php';
+
+$pnr = '';
+$ticket_details = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pnr'])) {
+    $pnr = $_POST['pnr'];
+
+    $stmt = $conn->prepare("SELECT p.Passenger_No, p.Name, p.Age, p.Gender, p.Class, p.Flight_Number, p.Journey_Date, f.Airport_Name 
+                            FROM Passengers p 
+                            JOIN Flights f ON p.Flight_Number = f.Flight_Number
+                            WHERE p.PNR = ?");
+    $stmt->bind_param("s", $pnr);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $ticket_details = $result->fetch_assoc();
+    } else {
+        $ticket_details = 'No booking found for the entered PNR.';
+    }
+    $stmt->close();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PNR Inquiry</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #0B0C10;
+            color: #66FCF1;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .top-buttons {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .top-buttons a {
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .top-buttons button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: rgb(70, 188, 182);
+            color: black;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .top-buttons button:hover {
+            background-color: #66FCF1;
+        }
+
+        .container {
+            max-width: 1100px auto;
+            margin: 0 auto;
+            background-color: #1F2833;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #66FCF1;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.2);
+        }
+
+        .heading {
+            text-align: center;
+            font-size: 26px;
+            margin-bottom: 20px;
+            color: #ff5722;
+        }
+
+        form {
+            text-align: center;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #45A29E;
+            border-radius: 5px;
+            background-color: #0B0C10;
+            color:white;
+        }
+
+        button[type="submit"] {
+            width: 25%;
+            padding: 12px;
+            font-size: 16px;
+            margin-left: 10px;
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #e64a19;
+        }
+
+        .ticket-details {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #0B0C10;
+            border: 1px solid #66FCF1;
+            border-radius: 8px;
+        }
+
+        h3 {
+            color: #ff5722;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #66FCF1;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #45A29E;
+            text-align: center;
+        }
+
+        th {
+            background-color: #66FCF1;
+            color: black;
+        }
+
+        label {
+            font-size: 16px;
+            color: #45A29E;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Navigation Buttons -->
+<div class="top-buttons">
+    <a href="index.php">
+        <button>🏠 Home</button>
+    </a>
+    <a href="dashboard.php">
+        <button>📊 Dashboard</button>
+    </a>
+</div>
+
+<!-- Main PNR Inquiry Section -->
+<div class="container">
+    <div class="heading">PNR Inquiry</div>
+
+    <form action="pnr_enquiry.php" method="POST">
+        <label for="pnr">Enter your PNR:</label><br><br>
+        <input type="text" id="pnr" name="pnr" required placeholder="Enter PNR" value="<?= htmlspecialchars($pnr) ?>">
+        <button type="submit">Check Booking</button>
+    </form>
+
+    <?php if ($ticket_details): ?>
+        <?php if (is_array($ticket_details)): ?>
+            <div class="ticket-details">
+                <h3>Booking Details:</h3>
+                <table>
+                    <tr>
+                        <th>Passenger No</th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Class</th>
+                        <th>Flight Number</th>
+                        <th>Journey Date</th>
+                        <th>Airline</th>
+                    </tr>
+                    <tr>
+                        <td><?= htmlspecialchars($ticket_details['Passenger_No']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Name']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Age']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Gender']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Class']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Flight_Number']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Journey_Date']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Airport_Name']) ?></td>
+                    </tr>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="ticket-details">
+                <p><?= htmlspecialchars($ticket_details) ?></p>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
+
+</body>
+</html>
+
+
+ticket
+
+<?php
+session_start();
+require_once 'config.php';
+
+if (!isset($_SESSION['UserID'])) {
+    header("Location: login.php");
+    exit();
+}
+
+if (!isset($_SESSION['passengers'])) {
+    echo "No passenger details found. Please add passengers first.";
+    exit();
+}
+
+$passengers = $_SESSION['passengers'];
+$flightNumber = $_GET['flightNumber'] ?? '';
+$journeyDate = $_GET['journeyDate'] ?? '';
+$pnrNumber = $_GET['pnr'] ?? '';
+$flightClass = $_GET['class'] ?? 'Economy';
+$fromAirport = $_GET['fromAirport'] ?? $_SESSION['fromAirport'] ?? '';
+$toAirport = $_GET['toAirport'] ?? $_SESSION['toAirport'] ?? '';
+
+$farePerPassenger = 0;
+$totalFare = 0;
+$distance = 0;
+
+$stmt = $conn->prepare("SELECT Distance_travelled FROM flights WHERE Flight_Number = ?");
+$stmt->bind_param("s", $flightNumber);
+$stmt->execute();
+$result = $stmt->get_result();
+$flight = $result->fetch_assoc();
+$stmt->close();
+
+if ($flight) {
+    $distance = (float)$flight['Distance_travelled'];
+    switch ($flightClass) {
+        case 'Economy': $farePerPassenger = (3 * $distance) + 200; break;
+        case 'Premium Economy': $farePerPassenger = (4 * $distance) + 300; break;
+        case 'Business': $farePerPassenger = (6 * $distance) + 500; break;
+        case 'First': $farePerPassenger = (8 * $distance) + 700; break;
+        default: $farePerPassenger = 500;
+    }
+    $totalFare = $farePerPassenger * count($passengers);
+} else {
+    echo "<h3>❌ Unable to calculate fare: Invalid flight number.</h3>";
+    exit();
+}
+
+// Check seat availability
+$stmt = $conn->prepare("SELECT COUNT(*) AS seatCount FROM Seats_Available WHERE Flight_Number = ? AND ClassType = ?");
+$stmt->bind_param("ss", $flightNumber, $flightClass);
+$stmt->execute();
+$result = $stmt->get_result();
+$data = $result->fetch_assoc();
+$stmt->close();
+
+if ($data['seatCount'] < count($passengers)) {
+    echo "<h3 style='color:red;'>❌ Not enough seats available in $flightClass class.</h3>";
+    exit();
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['confirmPayment'])) {
+    $paymentMethod = $_POST['paymentMethod'] ?? 'Unknown';
+
+    foreach ($passengers as $p) {
+        $stmt = $conn->prepare("SELECT Cabin_Code, Seat_Number FROM Seats_Available WHERE Flight_Number = ? AND ClassType = ? LIMIT 1");
+        $stmt->bind_param("ss", $flightNumber, $flightClass);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $seat = $result->fetch_assoc();
+        $stmt->close();
+
+        if ($seat) {
+            $cabin = $seat['Cabin_Code'];
+            $seatNo = $seat['Seat_Number'];
+
+            $stmt = $conn->prepare("INSERT INTO Seats_Booked (Flight_Number, Class, Cabin_Code, Seat_Number, PNR, Passenger_ID) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $flightNumber, $flightClass, $cabin, $seatNo, $pnrNumber, $p['Passenger_No']);
+            $stmt->execute();
+            $stmt->close();
+
+            $stmt = $conn->prepare("DELETE FROM Seats_Available WHERE Flight_Number = ? AND Cabin_Code = ? AND Seat_Number = ?");
+            $stmt->bind_param("sss", $flightNumber, $cabin, $seatNo);
+            $stmt->execute();
+            $stmt->close();
+
+            $stmt = $conn->prepare("INSERT INTO Passengers (UserID, Passenger_No, PNR, Name, Age, Gender, Class, Flight_Number, Journey_Date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sisssssss", $_SESSION['UserID'], $p['Passenger_No'], $pnrNumber, $p['Name'], $p['Age'], $p['Gender'], $flightClass, $flightNumber, $journeyDate);
+            $stmt->execute();
+            $stmt->close();
+        } else {
+            echo "<h3>❌ Seat allocation failed for Passenger {$p['Name']}.</h3>";
+            exit();
+        }
+    }
+
+    $userID = $_SESSION['UserID'];
+    $stmt = $conn->prepare("INSERT INTO Tickets (PNR, UserID, Flight_Number, Journey_Date, Source, Destination) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssss", $pnrNumber, $userID, $flightNumber, $journeyDate, $fromAirport, $toAirport);
+    $stmt->execute();
+    $stmt->close();
+
+    $stmt = $conn->prepare("INSERT INTO Payments (PNR_Number, Amount, Payment_Mode) VALUES (?, ?, ?)");
+    $stmt->bind_param("sds", $pnrNumber, $totalFare, $paymentMethod);
+    $stmt->execute();
+    $stmt->close();
+
+    unset($_SESSION['passengers'], $_SESSION['passenger_count'], $_SESSION['pnr']);
+    header("Location: ticket.php?pnr=$pnrNumber");
+    exit();
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight Payment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #f0f8ff, #e6f7ff);
+            margin: 0;
+            padding: 0;
+        }
+        .payment-container {
+            width: 500px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .details {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+        }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #aaa;
+            margin-top: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            margin-top: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<div class="payment-container">
+    <h2>Confirm Payment</h2>
+    <div class="details">
+        <strong>Flight Number:</strong> <?= htmlspecialchars($flightNumber) ?><br>
+        <strong>Journey Date:</strong> <?= htmlspecialchars($journeyDate) ?><br>
+        <strong>Class:</strong> <?= htmlspecialchars($flightClass) ?><br>
+        <strong>Fare per Passenger:</strong> ₹<?= number_format($farePerPassenger, 2) ?><br>
+        <strong>Total Passengers:</strong> <?= count($passengers) ?><br>
+        <strong>Total Fare:</strong> ₹<?= number_format($totalFare, 2) ?><br>
+    </div>
+
+    <form method="POST">
+        <label for="paymentMethod">Select Payment Method:</label>
+        <select name="paymentMethod" required>
+            <option value="UPI">UPI</option>
+            <option value="Credit Card">Credit Card</option>
+            <option value="Debit Card">Debit Card</option>
+            <option value="Net Banking">Net Banking</option>
+        </select>
+
+        <button type="submit" name="confirmPayment">Pay ₹<?= number_format($totalFare, 2) ?></button>
+    </form>
+</div>
+</body>
+</html>

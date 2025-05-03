@@ -1,0 +1,218 @@
+DELIMITER $$
+
+CREATE PROCEDURE Allocate_Seate (
+    IN flight_no VARCHAR(10),
+    IN class_type VARCHAR(20),
+    IN pnr_no VARCHAR(20),
+    IN passenger_id INT,
+    OUT status_msg VARCHAR(50),
+    OUT out_cabin VARCHAR(10),
+    OUT out_seat VARCHAR(10)
+)
+BEGIN
+    DECLARE seat_count INT DEFAULT 0;
+    DECLARE cabin_code VARCHAR(10);
+    DECLARE seat_no VARCHAR(10);
+
+    -- Check if seats are available
+    SELECT COUNT(*) INTO seat_count
+    FROM Seats_Available
+    WHERE Flight_Number = flight_no AND ClassType = class_type;
+
+    IF seat_count > 0 THEN
+        -- Fetch the first available seat
+        SELECT Cabin_Code, Seat_Number
+        INTO cabin_code, seat_no
+        FROM Seats_Available
+        WHERE Flight_Number = flight_no AND ClassType = class_type
+        LIMIT 1;
+
+        -- Insert into booked seats
+        INSERT INTO Seats_Booked (
+            Flight_Number, Class, Cabin_Code, Seat_Number,  PNR, Passenger_ID
+        ) VALUES (
+            flight_no, class_type, cabin_code, seat_no, pnr_no, passenger_id
+        );
+
+        -- Remove from available seats
+        DELETE FROM Seats_Available
+        WHERE Flight_Number = flight_no AND Cabin_Code = cabin_code AND Seat_Number = seat_no;
+
+        SET status_msg = 'Confirmed';
+        SET out_cabin = cabin_code;
+        SET out_seat = seat_no;
+    ELSE
+        SET status_msg = 'No Seats Available';
+        SET out_cabin = '';
+        SET out_seat = '';
+    END IF;
+END $$
+
+DELIMITER ;
+
+
+<?php
+require_once 'config.php';  // Include database connection file
+
+// Initialize variables
+$pnr = '';
+$ticket_details = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pnr'])) {
+    $pnr = $_POST['pnr'];
+
+    // Prepare and execute query to fetch ticket details by PNR
+    $stmt = $conn->prepare("SELECT p.Passenger_No, p.Name, p.Age, p.Gender, p.Class, p.Flight_Number, p.Journey_Date, f.Airport_Name 
+                            FROM Passengers p 
+                            JOIN Flights f ON p.Flight_Number = f.Flight_Number
+                            WHERE p.PNR = ?");
+    $stmt->bind_param("s", $pnr);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        // Fetch ticket details if PNR is found
+        $ticket_details = $result->fetch_assoc();
+    } else {
+        $ticket_details = 'No booking found for the entered PNR.';
+    }
+    $stmt->close();
+}
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNR Inquiry</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 30px;
+            background-color: #f2faff;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .heading {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 20px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 20%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .ticket-details {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .back-button {
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            width: 200px;
+            margin: 30px auto;
+        }
+
+        .back-button:hover {
+            background-color: #e53935;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="heading">PNR Inquiry</div>
+
+    <form action="pnr_enquiry.php" method="POST">
+        <label for="pnr">Enter your PNR:</label><br>
+        <input type="text" id="pnr" name="pnr" required placeholder="Enter PNR" value="<?= htmlspecialchars($pnr) ?>"><br>
+        <button type="submit">Check Booking</button>
+    </form>
+
+    <?php if ($ticket_details): ?>
+        <?php if (is_array($ticket_details)): ?>
+            <div class="ticket-details">
+                <h3>Booking Details:</h3>
+                <table>
+                    <tr>
+                        <th>Passenger No</th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Class</th>
+                        <th>Flight Number</th>
+                        <th>Journey Date</th>
+                        <th>Airline</th>
+                    </tr>
+                    <tr>
+                        <td><?= htmlspecialchars($ticket_details['Passenger_No']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Name']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Age']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Gender']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Class']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Flight_Number']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Journey_Date']) ?></td>
+                        <td><?= htmlspecialchars($ticket_details['Airport_Name']) ?></td>
+                    </tr>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="ticket-details">
+                <p><?= htmlspecialchars($ticket_details) ?></p>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
+
+<a href="dashboard.php"><button class="back-button">Back to Dashboard</button></a>
+
+</body>
+</html>
